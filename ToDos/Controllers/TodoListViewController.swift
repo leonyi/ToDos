@@ -11,32 +11,15 @@ import UIKit
 class TodoListViewController: UITableViewController {
     
     var itemArray = [Item] ()
-    
-    let defaults = UserDefaults.standard
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        let newItem1 = Item()
-        newItem1.title = "Finish Swift Projects"
-        itemArray.append(newItem1)
-        
-        let newItem2 = Item()
-        newItem2.title = "HIT Training"
-        itemArray.append(newItem2)
-        
-        let newItem3 = Item()
-        newItem3.title = "Mountain Biking"
-        itemArray.append(newItem3)
-        
-        let newItem4 = Item()
-        newItem4.title = "Prepare and have dinner"
-        itemArray.append(newItem4)
-        
-        
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
-        }
+        // Displaying plist document location.
+        print(dataFilePath!)
+
+        // Load the items from the Items.plist
+        loadItems()
         
     }
     
@@ -66,9 +49,8 @@ class TodoListViewController: UITableViewController {
         
         // If cell has a checkmark or not then set it to the oppossite when the cell is selected to update.
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-
-        // To get the checkmarks to show properly based on the logic above.
-        tableView.reloadData()
+        
+        saveItems()
         
         // To get the animation working when selecting and deselecting a cell.
         tableView.deselectRow(at: indexPath, animated: true)
@@ -89,11 +71,8 @@ class TodoListViewController: UITableViewController {
             
             self.itemArray.append(newItem)
             
-            // Adding data to defaults to persist data.  This gets saved on plist files
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-                        
-            // Refresh the view
-            self.tableView.reloadData()
+            // Using the encoder to persist data.
+            self.saveItems()
 
         }
 
@@ -108,7 +87,32 @@ class TodoListViewController: UITableViewController {
 
     }
     
+    // MARK - Model Manipulation Methods
+    func saveItems () {
+        // Using the encoder to persist data.
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        // Refresh the view
+        self.tableView.reloadData()
+    }
     
+    func loadItems(){
+        if let data = try? Data.init(contentsOf: dataFilePath!) {
+            //
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding itemArray: \(error)")
+            }
+        }
+    }
     
 }
 
